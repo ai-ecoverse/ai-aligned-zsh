@@ -186,9 +186,13 @@ assert_eq "bare glob qualifier stays literal" "shot*(1)" "$(cd "$FIX" && agent "
 assert_ne "  ...a human's zsh treats it as a qualifier" "shot*(1)" "$(cd "$FIX" && human "$HOME_PLAIN" 'echo shot*(1)')"
 
 # Bash idioms that already worked must keep working under the new options.
+# macOS's /bin/bash is 3.2, without associative arrays; there, say what bash 4+
+# prints.
+BASH_MAJOR=$("$BASH_BIN" -c 'echo "${BASH_VERSINFO[0]}"')
 while IFS='|' read -r name cmd; do
     [ -n "$name" ] || continue
     want=$(cd "$FIX" && bash_c "$cmd")
+    [ "$name" = "associative arrays" ] && [ "$BASH_MAJOR" -lt 4 ] && want="v 2"
     got=$(cd "$FIX" && agent "$HOME_PLAIN" "$cmd")
     assert_eq "still bash: $name" "$want" "$got"
 done <<'EOF'
