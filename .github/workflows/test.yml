@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS's own /bin/zsh, and Linux's from apt, with its /etc/zsh files.
+        os: [ macos-latest, ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install zsh
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y zsh
+
+    - name: Show toolchain
+      run: |
+        zsh --version
+        bash --version | head -1
+
+    - name: Run tests
+      run: ./test.sh
+
+    - name: Run installation
+      run: ./install.sh
+
+    - name: Verify agents are aligned and humans are not
+      run: |
+        out=$(env -i HOME="$HOME" PATH="$PATH" CLAUDECODE=1 zsh -c 'V="a b"; for x in $V; do echo "<$x>"; done; echo ====')
+        test "$out" = "$(printf '<a>\n<b>\n====')"
+        out=$(env -i HOME="$HOME" PATH="$PATH" zsh -c 'V="a b"; for x in $V; do echo "<$x>"; done')
+        test "$out" = "<a b>"
